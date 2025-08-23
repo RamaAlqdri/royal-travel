@@ -1,82 +1,56 @@
+// Hotels.ts
 import { CollectionConfig } from 'payload';
 
 const Hotels: CollectionConfig = {
   slug: 'hotels',
-  admin: {
-    useAsTitle: 'name',
-    description: 'Properti hotel atau villa utama.',
-  },
+  admin: { useAsTitle: 'name', description: 'Properti hotel atau villa utama.' },
   access: {
-    read: () => true, // Siapa saja boleh membaca (GET) data hotel
-    create: ({ req }) => req.user?.collection === 'users', // Hanya admin yang bisa membuat
-    update: ({ req }) => req.user?.collection === 'users', // Hanya admin yang bisa mengubah
-    delete: ({ req }) => req.user?.collection === 'users', // Hanya admin yang bisa menghapus
+    read: () => true,
+    create: ({ req }) => req.user?.collection === 'users',
+    update: ({ req }) => req.user?.collection === 'users',
+    delete: ({ req }) => req.user?.collection === 'users',
   },
   fields: [
+    { name: 'name', type: 'text', required: true },
+    { name: 'island', type: 'text', required: true },
+    { name: 'type', type: 'text' },
+    { name: 'starting_price', type: 'number' },
+    { name: 'short_description', type: 'textarea' },
+
     {
-      name: 'name', // Contoh: Private Jet Villa
-      type: 'text',
-      required: true,
-    },
-    {
-      name: 'island', // Contoh: Bali
-      type: 'text',
-      required: true,
-    },
-    {
-      name: 'type', // Contoh: Unique Villa
-      type: 'text',
-    },
-    {
-      name: 'starting_price',
-      type: 'number',
-    },
-    {
-      name: 'short_description',
-      type: 'textarea',
-    },
-    {
-      name: 'overview', // Mereplikasi objek 'overview'
+      name: 'overview',
       type: 'group',
       fields: [
         { name: 'title', type: 'text' },
         { name: 'caption', type: 'text' },
         { name: 'subtitle', type: 'text' },
-        { name: 'description', type: 'richText' }, // richText untuk format HTML
+        { name: 'description', type: 'richText' },
       ],
     },
+
+    // === updated: facilities boleh upload image ===
     {
-      name: 'facilities', // Mereplikasi array 'facilities'
+      name: 'facilities',
       type: 'array',
       fields: [
-        { name: 'facility', type: 'text' },
+        { name: 'facility', type: 'text', required: true },
+        {
+          name: 'image',
+          type: 'upload',
+          relationTo: 'media', // collection media kamu
+          required: false,
+        },
       ],
     },
+
     {
-      name: 'media', // Mereplikasi objek 'media'
+      name: 'media',
       type: 'group',
       fields: [
-        {
-          name: 'hero',
-          type: 'upload',
-          relationTo: 'media', // Menghubungkan ke Media Collection
-          required: true,
-        },
-        {
-          name: 'overview_1',
-          type: 'upload',
-          relationTo: 'media',
-        },
-        {
-          name: 'overview_2',
-          type: 'upload',
-          relationTo: 'media',
-        },
-        {
-          name: 'overview_3',
-          type: 'upload',
-          relationTo: 'media',
-        },
+        { name: 'hero', type: 'upload', relationTo: 'media', required: true },
+        { name: 'overview_1', type: 'upload', relationTo: 'media' },
+        { name: 'overview_2', type: 'upload', relationTo: 'media' },
+        { name: 'overview_3', type: 'upload', relationTo: 'media' },
       ],
     },
   ],

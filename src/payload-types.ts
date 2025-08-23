@@ -80,7 +80,6 @@ export interface Config {
     'yacht-charters': YachtCharter;
     'private-jets': PrivateJet;
     'jet-charters': JetCharter;
-    orders: Order;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -105,7 +104,6 @@ export interface Config {
     'yacht-charters': YachtChartersSelect<false> | YachtChartersSelect<true>;
     'private-jets': PrivateJetsSelect<false> | PrivateJetsSelect<true>;
     'jet-charters': JetChartersSelect<false> | JetChartersSelect<true>;
-    orders: OrdersSelect<false> | OrdersSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -787,7 +785,8 @@ export interface Hotel {
   };
   facilities?:
     | {
-        facility?: string | null;
+        facility: string;
+        image?: (number | null) | Media;
         id?: string | null;
       }[]
     | null;
@@ -801,7 +800,7 @@ export interface Hotel {
   createdAt: string;
 }
 /**
- * Tipe kamar atau unit spesifik di dalam sebuah hotel.
+ * Tipe kamar/unit di dalam sebuah hotel.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "hotel-rooms".
@@ -839,11 +838,54 @@ export interface HotelRoom {
         }[]
       | null;
   };
+  facilities?:
+    | {
+        name: string;
+        icon:
+          | 'icon-hotel-double_bed_2'
+          | 'icon-hotel-safety_box'
+          | 'icon-hotel-patio'
+          | 'icon-hotel-tv'
+          | 'icon-hotel-disable'
+          | 'icon-hotel-bottle'
+          | 'icon-hotel-wifi'
+          | 'icon-hotel-hairdryer'
+          | 'icon-hotel-condition'
+          | 'icon-hotel-loundry';
+        note?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  reviews?:
+    | {
+        authorName: string;
+        rating: number;
+        title?: string | null;
+        body?: {
+          root: {
+            type: string;
+            children: {
+              type: string;
+              version: number;
+              [k: string]: unknown;
+            }[];
+            direction: ('ltr' | 'rtl') | null;
+            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+            indent: number;
+            version: number;
+          };
+          [k: string]: unknown;
+        } | null;
+        publishedAt?: string | null;
+        avatar?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
 }
 /**
- * Informasi utama mengenai lapangan golf.
+ * Informasi utama lapangan golf.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "golf-courses".
@@ -851,7 +893,13 @@ export interface HotelRoom {
 export interface GolfCourse {
   id: number;
   name: string;
+  slug?: string | null;
+  /**
+   * Gunakan nilai: bali, ntb, ntt, kalimantan, sumatera, jawa, kepulauan riau, sulawesi, maluku, papua
+   */
   island: string;
+  featured?: boolean | null;
+  rating?: number | null;
   hero?: {
     title?: string | null;
     tagline?: string | null;
@@ -859,7 +907,7 @@ export interface GolfCourse {
   };
   overview?: {
     designer?: string | null;
-    difficultyLevel?: string | null;
+    difficultyLevel?: ('beginner' | 'intermediate' | 'championship') | null;
     courseDetails?: {
       holes?: number | null;
       par?: number | null;
@@ -890,11 +938,21 @@ export interface GolfCourse {
     grassType?: string | null;
     inclusions?: string | null;
   };
+  /**
+   * Sematkan Google Maps (Embed URL).
+   */
+  map?: {
+    /**
+     * Contoh: https://www.google.com/maps/embed?... (pakai URL embed, bukan share link biasa)
+     */
+    embedUrl?: string | null;
+  };
   media: {
     hero: number | Media;
     gallery?:
       | {
           image: number | Media;
+          caption?: string | null;
           id?: string | null;
         }[]
       | null;
@@ -903,15 +961,40 @@ export interface GolfCourse {
   createdAt: string;
 }
 /**
- * Paket harga spesifik yang tersedia di sebuah lapangan golf.
+ * Paket harga pada tiap lapangan.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "golf-packages".
  */
 export interface GolfPackage {
   id: number;
+  /**
+   * Contoh: "18 Holes – Visitor"
+   */
   package: string;
-  price: number;
+  /**
+   * Satuan harga yang tampil di tabel Pricing.
+   */
+  unit: 'per_person' | 'per_hour' | 'per_round' | 'per_group' | 'contact';
+  /**
+   * Wajib diisi kecuali unit = "Contact us / Custom".
+   */
+  price?: number | null;
+  /**
+   * Contoh: USD, IDR, SGD.
+   */
+  currency?: string | null;
+  /**
+   * Urutan tampil (kecil = atas).
+   */
+  order?: number | null;
+  /**
+   * Catatan opsional, mis. “After 2 PM”, “Include cart”
+   */
+  notes?: string | null;
+  /**
+   * Paket ini milik course mana.
+   */
   parentCourse: number | GolfCourse;
   updatedAt: string;
   createdAt: string;
@@ -923,9 +1006,126 @@ export interface GolfPackage {
 export interface Yacht {
   id: number;
   name: string;
+  slug?: string | null;
+  /**
+   * Teks kecil di hero.
+   */
+  tagline?: string | null;
+  /**
+   * Luxury Motor Yacht, Catamaran, dll.
+   */
   type?: string | null;
+  /**
+   * Bali, Lombok, Raja Ampat, dll.
+   */
   island?: string | null;
+  short_description?: string | null;
+  overview?: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
   starting_price?: number | null;
+  currency?: string | null;
+  /**
+   * Panjang kapal (meter).
+   */
+  lengthMeters?: number | null;
+  /**
+   * Klasifikasi ukuran untuk filter.
+   */
+  sizeClass?: ('small' | 'medium' | 'large') | null;
+  /**
+   * Opsional, mis. “Superyacht”. Ditampilkan bersama length.
+   */
+  sizeLabel?: string | null;
+  /**
+   * Jumlah tamu maksimum.
+   */
+  capacity?: number | null;
+  /**
+   * Jumlah kabin.
+   */
+  cabins?: number | null;
+  /**
+   * Contoh: Captain, Chef, 3 Hosts.
+   */
+  crew?: string | null;
+  features?:
+    | {
+        item?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  experiences?: ('romance' | 'adventure' | 'family' | 'leisure')[] | null;
+  media?: {
+    hero?: (number | null) | Media;
+    gallery?:
+      | {
+          image: number | Media;
+          caption?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  /**
+   * Mengisi tabel “Upcoming Availability”. Frontend akan filter berdasarkan bulan yang dipilih.
+   */
+  schedules?:
+    | {
+        startDate: string;
+        endDate: string;
+        status: 'available' | 'reserved' | 'maintenance';
+        route: string;
+        id?: string | null;
+      }[]
+    | null;
+  specialVoyages?:
+    | {
+        title: string;
+        startDate: string;
+        endDate: string;
+        route?: string | null;
+        /**
+         * Sisa kuota/kapasitas.
+         */
+        spots?: number | null;
+        /**
+         * Mis. “Limited Spots”, “Couples Only”.
+         */
+        badge?: string | null;
+        description?: string | null;
+        image?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
+  privateEvents?:
+    | {
+        title: string;
+        /**
+         * Nama ikon (mis. heart, briefcase) untuk frontend.
+         */
+        icon?: string | null;
+        description?: string | null;
+        features?:
+          | {
+              item?: string | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -936,13 +1136,39 @@ export interface Yacht {
 export interface YachtCharter {
   id: number;
   name: string;
-  price: number;
+  slug?: string | null;
+  /**
+   * Paket ini milik yacht apa.
+   */
   parentYacht: number | Yacht;
+  /**
+   * Urutan tampil di tabel harga (kecil = lebih atas).
+   */
+  order?: number | null;
+  price: number;
+  currency?: string | null;
+  durationDays?: number | null;
+  durationHours?: number | null;
+  inclusions?:
+    | {
+        item?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  media?: {
+    gallery?:
+      | {
+          image?: (number | null) | Media;
+          caption?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
   updatedAt: string;
   createdAt: string;
 }
 /**
- * Informasi mengenai armada jet pribadi yang tersedia.
+ * Informasi armada jet pribadi.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "private-jets".
@@ -950,11 +1176,46 @@ export interface YachtCharter {
 export interface PrivateJet {
   id: number;
   name: string;
-  type?: string | null;
   /**
-   * Lokasi utama atau bandara asal jet ini.
+   * Auto dari Name; bisa disunting.
+   */
+  slug?: string | null;
+  /**
+   * Dipakai untuk filter di website.
+   */
+  type: 'light' | 'midsize' | 'heavy' | 'ultra';
+  manufacturer?: string | null;
+  model?: string | null;
+  /**
+   * Lokasi/bandara utama jet.
    */
   homeBase?: string | null;
+  /**
+   * Maksimum penumpang (mis. 14).
+   */
+  capacity: number;
+  rangeKm?: number | null;
+  rangeNm?: number | null;
+  cruiseSpeedKts?: number | null;
+  cruiseAltitudeFt?: number | null;
+  cabinFeatures?:
+    | {
+        feature: string;
+        id?: string | null;
+      }[]
+    | null;
+  crew?:
+    | {
+        role: string;
+        id?: string | null;
+      }[]
+    | null;
+  inflightExperience?:
+    | {
+        item: string;
+        id?: string | null;
+      }[]
+    | null;
   startingPrice?: number | null;
   short_description?: string | null;
   overview?: {
@@ -977,23 +1238,24 @@ export interface PrivateJet {
       [k: string]: unknown;
     } | null;
   };
-  facilities?:
-    | {
-        facility?: string | null;
-        id?: string | null;
-      }[]
-    | null;
   media: {
     hero: number | Media;
     overview_1?: (number | null) | Media;
     overview_2?: (number | null) | Media;
     overview_3?: (number | null) | Media;
+    gallery?:
+      | {
+          image: number | Media;
+          caption?: string | null;
+          id?: string | null;
+        }[]
+      | null;
   };
   updatedAt: string;
   createdAt: string;
 }
 /**
- * Paket charter atau rute spesifik untuk jet pribadi.
+ * Paket charter/rute spesifik untuk jet.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "jet-charters".
@@ -1001,8 +1263,32 @@ export interface PrivateJet {
 export interface JetCharter {
   id: number;
   name: string;
-  price: number;
+  /**
+   * Auto dari Name; bisa disunting.
+   */
+  slug?: string | null;
   parentJet: number | PrivateJet;
+  price: number;
+  currency?: ('USD' | 'EUR' | 'IDR') | null;
+  tripType?: ('oneway' | 'roundtrip') | null;
+  route: {
+    fromCity: string;
+    fromAirport?: string | null;
+    fromCode?: string | null;
+    toCity: string;
+    toAirport?: string | null;
+    toCode?: string | null;
+    /**
+     * Mis. 150 untuk 2h 30m.
+     */
+    durationMinutes?: number | null;
+  };
+  inclusions?:
+    | {
+        item: string;
+        id?: string | null;
+      }[]
+    | null;
   overview?: {
     title_small?: string | null;
     title_main?: string | null;
@@ -1027,67 +1313,11 @@ export interface JetCharter {
     gallery?:
       | {
           image: number | Media;
+          caption?: string | null;
           id?: string | null;
         }[]
       | null;
   };
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Kumpulan semua pesanan yang masuk dari pelanggan.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "orders".
- */
-export interface Order {
-  id: number;
-  invoiceNumber?: string | null;
-  status?: ('pending' | 'confirmed' | 'cancelled' | 'completed') | null;
-  totalAmount: number;
-  customerDetails: {
-    firstName: string;
-    lastName?: string | null;
-    email: string;
-    phoneNumber?: string | null;
-  };
-  orderedItems: {
-    product:
-      | {
-          relationTo: 'hotel-rooms';
-          value: number | HotelRoom;
-        }
-      | {
-          relationTo: 'golf-packages';
-          value: number | GolfPackage;
-        }
-      | {
-          relationTo: 'yacht-charters';
-          value: number | YachtCharter;
-        }
-      | {
-          relationTo: 'jet-charters';
-          value: number | JetCharter;
-        };
-    /**
-     * Harga produk per unit saat transaksi dibuat.
-     */
-    priceAtTimeOfPurchase: number;
-    quantity?: number | null;
-    /**
-     * Informasi spesifik seperti tanggal check-in, jumlah tamu, dll.
-     */
-    bookingDetails?:
-      | {
-          [k: string]: unknown;
-        }
-      | unknown[]
-      | string
-      | number
-      | boolean
-      | null;
-    id?: string | null;
-  }[];
   updatedAt: string;
   createdAt: string;
 }
@@ -1315,10 +1545,6 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'jet-charters';
         value: number | JetCharter;
-      } | null)
-    | ({
-        relationTo: 'orders';
-        value: number | Order;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1706,6 +1932,7 @@ export interface HotelsSelect<T extends boolean = true> {
     | T
     | {
         facility?: T;
+        image?: T;
         id?: T;
       };
   media?:
@@ -1745,6 +1972,25 @@ export interface HotelRoomsSelect<T extends boolean = true> {
               id?: T;
             };
       };
+  facilities?:
+    | T
+    | {
+        name?: T;
+        icon?: T;
+        note?: T;
+        id?: T;
+      };
+  reviews?:
+    | T
+    | {
+        authorName?: T;
+        rating?: T;
+        title?: T;
+        body?: T;
+        publishedAt?: T;
+        avatar?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1754,7 +2000,10 @@ export interface HotelRoomsSelect<T extends boolean = true> {
  */
 export interface GolfCoursesSelect<T extends boolean = true> {
   name?: T;
+  slug?: T;
   island?: T;
+  featured?: T;
+  rating?: T;
   hero?:
     | T
     | {
@@ -1787,6 +2036,11 @@ export interface GolfCoursesSelect<T extends boolean = true> {
         grassType?: T;
         inclusions?: T;
       };
+  map?:
+    | T
+    | {
+        embedUrl?: T;
+      };
   media?:
     | T
     | {
@@ -1795,6 +2049,7 @@ export interface GolfCoursesSelect<T extends boolean = true> {
           | T
           | {
               image?: T;
+              caption?: T;
               id?: T;
             };
       };
@@ -1807,7 +2062,11 @@ export interface GolfCoursesSelect<T extends boolean = true> {
  */
 export interface GolfPackagesSelect<T extends boolean = true> {
   package?: T;
+  unit?: T;
   price?: T;
+  currency?: T;
+  order?: T;
+  notes?: T;
   parentCourse?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -1818,9 +2077,75 @@ export interface GolfPackagesSelect<T extends boolean = true> {
  */
 export interface YachtsSelect<T extends boolean = true> {
   name?: T;
+  slug?: T;
+  tagline?: T;
   type?: T;
   island?: T;
+  short_description?: T;
+  overview?: T;
   starting_price?: T;
+  currency?: T;
+  lengthMeters?: T;
+  sizeClass?: T;
+  sizeLabel?: T;
+  capacity?: T;
+  cabins?: T;
+  crew?: T;
+  features?:
+    | T
+    | {
+        item?: T;
+        id?: T;
+      };
+  experiences?: T;
+  media?:
+    | T
+    | {
+        hero?: T;
+        gallery?:
+          | T
+          | {
+              image?: T;
+              caption?: T;
+              id?: T;
+            };
+      };
+  schedules?:
+    | T
+    | {
+        startDate?: T;
+        endDate?: T;
+        status?: T;
+        route?: T;
+        id?: T;
+      };
+  specialVoyages?:
+    | T
+    | {
+        title?: T;
+        startDate?: T;
+        endDate?: T;
+        route?: T;
+        spots?: T;
+        badge?: T;
+        description?: T;
+        image?: T;
+        id?: T;
+      };
+  privateEvents?:
+    | T
+    | {
+        title?: T;
+        icon?: T;
+        description?: T;
+        features?:
+          | T
+          | {
+              item?: T;
+              id?: T;
+            };
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1830,8 +2155,30 @@ export interface YachtsSelect<T extends boolean = true> {
  */
 export interface YachtChartersSelect<T extends boolean = true> {
   name?: T;
-  price?: T;
+  slug?: T;
   parentYacht?: T;
+  order?: T;
+  price?: T;
+  currency?: T;
+  durationDays?: T;
+  durationHours?: T;
+  inclusions?:
+    | T
+    | {
+        item?: T;
+        id?: T;
+      };
+  media?:
+    | T
+    | {
+        gallery?:
+          | T
+          | {
+              image?: T;
+              caption?: T;
+              id?: T;
+            };
+      };
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1841,8 +2188,34 @@ export interface YachtChartersSelect<T extends boolean = true> {
  */
 export interface PrivateJetsSelect<T extends boolean = true> {
   name?: T;
+  slug?: T;
   type?: T;
+  manufacturer?: T;
+  model?: T;
   homeBase?: T;
+  capacity?: T;
+  rangeKm?: T;
+  rangeNm?: T;
+  cruiseSpeedKts?: T;
+  cruiseAltitudeFt?: T;
+  cabinFeatures?:
+    | T
+    | {
+        feature?: T;
+        id?: T;
+      };
+  crew?:
+    | T
+    | {
+        role?: T;
+        id?: T;
+      };
+  inflightExperience?:
+    | T
+    | {
+        item?: T;
+        id?: T;
+      };
   startingPrice?: T;
   short_description?: T;
   overview?:
@@ -1853,12 +2226,6 @@ export interface PrivateJetsSelect<T extends boolean = true> {
         subtitle?: T;
         description?: T;
       };
-  facilities?:
-    | T
-    | {
-        facility?: T;
-        id?: T;
-      };
   media?:
     | T
     | {
@@ -1866,6 +2233,13 @@ export interface PrivateJetsSelect<T extends boolean = true> {
         overview_1?: T;
         overview_2?: T;
         overview_3?: T;
+        gallery?:
+          | T
+          | {
+              image?: T;
+              caption?: T;
+              id?: T;
+            };
       };
   updatedAt?: T;
   createdAt?: T;
@@ -1876,8 +2250,28 @@ export interface PrivateJetsSelect<T extends boolean = true> {
  */
 export interface JetChartersSelect<T extends boolean = true> {
   name?: T;
-  price?: T;
+  slug?: T;
   parentJet?: T;
+  price?: T;
+  currency?: T;
+  tripType?: T;
+  route?:
+    | T
+    | {
+        fromCity?: T;
+        fromAirport?: T;
+        fromCode?: T;
+        toCity?: T;
+        toAirport?: T;
+        toCode?: T;
+        durationMinutes?: T;
+      };
+  inclusions?:
+    | T
+    | {
+        item?: T;
+        id?: T;
+      };
   overview?:
     | T
     | {
@@ -1893,36 +2287,9 @@ export interface JetChartersSelect<T extends boolean = true> {
           | T
           | {
               image?: T;
+              caption?: T;
               id?: T;
             };
-      };
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "orders_select".
- */
-export interface OrdersSelect<T extends boolean = true> {
-  invoiceNumber?: T;
-  status?: T;
-  totalAmount?: T;
-  customerDetails?:
-    | T
-    | {
-        firstName?: T;
-        lastName?: T;
-        email?: T;
-        phoneNumber?: T;
-      };
-  orderedItems?:
-    | T
-    | {
-        product?: T;
-        priceAtTimeOfPurchase?: T;
-        quantity?: T;
-        bookingDetails?: T;
-        id?: T;
       };
   updatedAt?: T;
   createdAt?: T;

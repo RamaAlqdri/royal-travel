@@ -1,44 +1,103 @@
-import { CollectionConfig } from 'payload';
+import type { CollectionConfig } from 'payload'
+import slugify from 'slugify'
+
+const toSlug = (s?: string) => (s ? slugify(s, { lower: true, strict: true, locale: 'id' }) : '')
 
 const PrivateJets: CollectionConfig = {
   slug: 'private-jets',
   admin: {
     useAsTitle: 'name',
-    description: 'Informasi mengenai armada jet pribadi yang tersedia.',
+    description: 'Informasi armada jet pribadi.',
+    defaultColumns: ['name', 'type', 'capacity', 'homeBase', 'startingPrice', 'slug'],
   },
   access: {
-    read: () => true, // Siapa saja boleh membaca (GET) data hotel
-    create: ({ req }) => req.user?.collection === 'users', // Hanya admin yang bisa membuat
-    update: ({ req }) => req.user?.collection === 'users', // Hanya admin yang bisa mengubah
-    delete: ({ req }) => req.user?.collection === 'users', // Hanya admin yang bisa menghapus
+    read: () => true,
+    create: ({ req }) => req.user?.collection === 'users',
+    update: ({ req }) => req.user?.collection === 'users',
+    delete: ({ req }) => req.user?.collection === 'users',
   },
+
   fields: [
+    // Identitas
+    { name: 'name', type: 'text', required: true },
     {
-      name: 'name', // Contoh: Gulfstream G650ER
+      name: 'slug',
       type: 'text',
+      unique: true,
+      index: true,
+      admin: { position: 'sidebar', description: 'Auto dari Name; bisa disunting.' },
+    },
+
+    // Klasifikasi & operasional
+    {
+      name: 'type',
+      label: 'Aircraft Type',
+      type: 'select',
       required: true,
+      defaultValue: 'midsize',
+      options: [
+        { label: 'Light Jet', value: 'light' },
+        { label: 'Midsize Jet', value: 'midsize' },
+        { label: 'Heavy Jet', value: 'heavy' },
+        { label: 'Ultra Long Range', value: 'ultra' },
+      ],
+      admin: { description: 'Dipakai untuk filter di website.' },
     },
+    { name: 'manufacturer', type: 'text' },
+    { name: 'model', type: 'text' },
     {
-      name: 'type', // Contoh: Ultra Long Range Jet
-      type: 'text',
-    },
-    {
-      name: 'homeBase', // Menggantikan 'island' untuk lebih relevan
+      name: 'homeBase',
       label: 'Home Base',
       type: 'text',
-      admin: {
-        description: 'Lokasi utama atau bandara asal jet ini.',
-      }
+      admin: { description: 'Lokasi/bandara utama jet.' },
     },
+    {
+      name: 'capacity',
+      label: 'Passenger Capacity',
+      type: 'number',
+      required: true,
+      min: 1,
+      admin: { description: 'Maksimum penumpang (mis. 14).' },
+    },
+    { name: 'rangeKm', label: 'Range (km)', type: 'number', min: 0 },
+    { name: 'rangeNm', label: 'Range (NM)', type: 'number', min: 0 },
+    { name: 'cruiseSpeedKts', label: 'Cruising Speed (kts)', type: 'number', min: 0 },
+    { name: 'cruiseAltitudeFt', label: 'Cruising Altitude (ft)', type: 'number', min: 0 },
+
+    // Konten untuk spesifikasi & pengalaman
+    {
+      name: 'cabinFeatures',
+      label: 'Cabin Features',
+      type: 'array',
+      labels: { singular: 'Feature', plural: 'Features' },
+      fields: [{ name: 'feature', type: 'text', required: true }],
+    },
+    {
+      name: 'crew',
+      label: 'Crew',
+      type: 'array',
+      labels: { singular: 'Crew Role', plural: 'Crew Roles' },
+      fields: [{ name: 'role', type: 'text', required: true }],
+    },
+    {
+      name: 'inflightExperience',
+      label: 'In-Flight Experience',
+      type: 'array',
+      labels: { singular: 'Experience', plural: 'Experiences' },
+      fields: [{ name: 'item', type: 'text', required: true }],
+    },
+
+    // Harga
     {
       name: 'startingPrice',
-      label: 'Harga Mulai (per jam)',
+      label: 'Harga Mulai (per jam, USD)',
       type: 'number',
+      min: 0,
+      admin: { step: 100 },
     },
-    {
-      name: 'short_description',
-      type: 'textarea',
-    },
+
+    // Deskripsi / overview
+    { name: 'short_description', type: 'textarea' },
     {
       name: 'overview',
       type: 'group',
@@ -49,41 +108,38 @@ const PrivateJets: CollectionConfig = {
         { name: 'description', type: 'richText' },
       ],
     },
-    {
-      name: 'facilities',
-      type: 'array',
-      fields: [
-        { name: 'facility', type: 'text' },
-      ],
-    },
+
+    // Media
     {
       name: 'media',
       type: 'group',
       fields: [
+        { name: 'hero', type: 'upload', relationTo: 'media', required: true },
+        { name: 'overview_1', type: 'upload', relationTo: 'media' },
+        { name: 'overview_2', type: 'upload', relationTo: 'media' },
+        { name: 'overview_3', type: 'upload', relationTo: 'media' },
         {
-          name: 'hero',
-          type: 'upload',
-          relationTo: 'media',
-          required: true,
-        },
-        {
-          name: 'overview_1',
-          type: 'upload',
-          relationTo: 'media',
-        },
-        {
-          name: 'overview_2',
-          type: 'upload',
-          relationTo: 'media',
-        },
-        {
-          name: 'overview_3',
-          type: 'upload',
-          relationTo: 'media',
+          name: 'gallery',
+          type: 'array',
+          labels: { singular: 'Image', plural: 'Gallery' },
+          fields: [
+            { name: 'image', type: 'upload', relationTo: 'media', required: true },
+            { name: 'caption', type: 'text' },
+          ],
         },
       ],
     },
   ],
-};
 
-export default PrivateJets;
+  hooks: {
+    beforeValidate: [
+      async ({ data }) => {
+        if (!data) return
+        if (!data.slug && data.name) data.slug = toSlug(data.name)
+        if (data.slug) data.slug = toSlug(data.slug)
+      },
+    ],
+  },
+}
+
+export default PrivateJets

@@ -1,30 +1,73 @@
-import { CollectionConfig } from 'payload';
+import type { CollectionConfig } from 'payload';
+import slugify from 'slugify';
+
+const toSlug = (s?: string) =>
+  s ? slugify(s, { lower: true, strict: true, locale: 'id' }) : '';
 
 const GolfCourses: CollectionConfig = {
   slug: 'golf-courses',
-  admin: {
-    useAsTitle: 'name',
-    description: 'Informasi utama mengenai lapangan golf.',
-  },
+  admin: { useAsTitle: 'name', description: 'Informasi utama lapangan golf.' },
   access: {
-    read: () => true, // Siapa saja boleh membaca (GET) data hotel
-    create: ({ req }) => req.user?.collection === 'users', // Hanya admin yang bisa membuat
-    update: ({ req }) => req.user?.collection === 'users', // Hanya admin yang bisa mengubah
-    delete: ({ req }) => req.user?.collection === 'users', // Hanya admin yang bisa menghapus
+    read: () => true,
+    create: ({ req }) => req.user?.collection === 'users',
+    update: ({ req }) => req.user?.collection === 'users',
+    delete: ({ req }) => req.user?.collection === 'users',
+  },
+  hooks: {
+    beforeValidate: [
+      async ({ data, req, originalDoc }) => {
+        if (!data) return data;
+
+        if ((!data.slug || data.slug.trim() === '') && data.name) {
+          const base = toSlug(data.name) || 'course';
+          let candidate = base;
+          let n = 2;
+          const excludeId = originalDoc?.id || data.id;
+
+          const exists = async (s: string) => {
+            const res = await req.payload.find({
+              collection: 'golf-courses',
+              where: {
+                and: [
+                  { slug: { equals: s } },
+                  ...(excludeId ? [{ id: { not_equals: excludeId } }] : []),
+                ],
+              },
+              limit: 1,
+              depth: 0,
+            });
+            return (res?.totalDocs || 0) > 0;
+          };
+
+          while (await exists(candidate)) candidate = `${base}-${n++}`;
+          data.slug = candidate;
+        }
+
+        return data;
+      },
+    ],
   },
   fields: [
-    {
-      name: 'name', // Contoh: New Kuta Golf
-      type: 'text',
-      required: true,
-    },
+    { name: 'name', type: 'text', required: true },
+    { name: 'slug', type: 'text', unique: true, admin: { position: 'sidebar' } },
+
+    // Lokasi (samakan dengan option di <select id="location-filter">)
     {
       name: 'island',
       type: 'text',
       required: true,
+      admin: {
+        description:
+          'Gunakan nilai: bali, ntb, ntt, kalimantan, sumatera, jawa, kepulauan riau, sulawesi, maluku, papua',
+      },
     },
+
+    // Penanda & rating
+    { name: 'featured', type: 'checkbox', defaultValue: false },
+    { name: 'rating', type: 'number', min: 0, max: 5, admin: { step: 0.1 } },
+
     {
-      name: 'hero', // Objek hero
+      name: 'hero',
       type: 'group',
       fields: [
         { name: 'title', type: 'text' },
@@ -33,11 +76,19 @@ const GolfCourses: CollectionConfig = {
       ],
     },
     {
-      name: 'overview', // Objek overview
+      name: 'overview',
       type: 'group',
       fields: [
         { name: 'designer', type: 'text' },
-        { name: 'difficultyLevel', type: 'text' },
+        {
+          name: 'difficultyLevel',
+          type: 'select',
+          options: [
+            { label: 'Beginner', value: 'beginner' },
+            { label: 'Intermediate', value: 'intermediate' },
+            { label: 'Championship', value: 'championship' },
+          ],
+        },
         {
           name: 'courseDetails',
           type: 'group',
@@ -46,48 +97,51 @@ const GolfCourses: CollectionConfig = {
             { name: 'par', type: 'number' },
           ],
         },
-        {
-          name: 'copywriting',
-          type: 'richText', // richText lebih cocok untuk deskripsi panjang
-        },
+        { name: 'copywriting', type: 'richText' },
       ],
     },
     {
-      name: 'facilities', // Array fasilitas
+      name: 'facilities',
       type: 'array',
-      fields: [
-        { name: 'facility', type: 'text' },
-      ],
+      fields: [{ name: 'facility', type: 'text' }],
     },
     {
-      name: 'details', // Objek details
+      name: 'details',
       type: 'group',
       fields: [
         { name: 'grassType', type: 'text' },
         { name: 'inclusions', type: 'textarea' },
-        // Anda bisa tambahkan field lain seperti tee distances, dress code, dll.
       ],
     },
+
+    // 🔥 Tambahan baru: map embed untuk iframe di detail page
     {
-      name: 'media', // Objek media
+      name: 'map',
       type: 'group',
+      admin: { description: 'Sematkan Google Maps (Embed URL).' },
       fields: [
         {
-          name: 'hero',
-          type: 'upload',
-          relationTo: 'media',
-          required: true,
+          name: 'embedUrl',
+          type: 'text',
+          admin: {
+            description:
+              'Contoh: https://www.google.com/maps/embed?... (pakai URL embed, bukan share link biasa)',
+          },
         },
+      ],
+    },
+
+    {
+      name: 'media',
+      type: 'group',
+      fields: [
+        { name: 'hero', type: 'upload', relationTo: 'media', required: true },
         {
           name: 'gallery',
           type: 'array',
           fields: [
-            {
-              name: 'image',
-              type: 'upload',
-              relationTo: 'media',
-              required: true,
-            },
+            { name: 'image', type: 'upload', relationTo: 'media', required: true },
+            { name: 'caption', type: 'text' },
           ],
         },
       ],

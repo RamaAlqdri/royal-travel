@@ -1,37 +1,81 @@
-import { CollectionConfig } from 'payload';
+import type { CollectionConfig } from 'payload'
 
 const GolfPackages: CollectionConfig = {
-  slug: 'golf-packages', // Ini adalah "produk" yang bisa dipesan
+  slug: 'golf-packages',
   admin: {
     useAsTitle: 'package',
-    description: 'Paket harga spesifik yang tersedia di sebuah lapangan golf.',
+    description: 'Paket harga pada tiap lapangan.',
   },
   access: {
-    read: () => true, // Siapa saja boleh membaca (GET) data hotel
-    create: ({ req }) => req.user?.collection === 'users', // Hanya admin yang bisa membuat
-    update: ({ req }) => req.user?.collection === 'users', // Hanya admin yang bisa mengubah
-    delete: ({ req }) => req.user?.collection === 'users', // Hanya admin yang bisa menghapus
+    read: () => true,
+    create: ({ req }) => req.user?.collection === 'users',
+    update: ({ req }) => req.user?.collection === 'users',
+    delete: ({ req }) => req.user?.collection === 'users',
   },
   fields: [
     {
-      name: 'package', // Contoh: "18 Holes – Foreign Visitor"
+      name: 'package',
       type: 'text',
       required: true,
+      admin: { description: 'Contoh: "18 Holes – Visitor"' },
     },
+
+    // 🔥 Tambahan baru: satuan harga
+    {
+      name: 'unit',
+      type: 'select',
+      defaultValue: 'per_person',
+      options: [
+        { label: 'Per person', value: 'per_person' },
+        { label: 'Per hour', value: 'per_hour' },
+        { label: 'Per round', value: 'per_round' },
+        { label: 'Per group', value: 'per_group' },
+        { label: 'Contact us / Custom', value: 'contact' },
+      ],
+      admin: { description: 'Satuan harga yang tampil di tabel Pricing.' },
+      required: true,
+    },
+
+    // price dibuat opsional, tapi divalidasi tergantung unit
     {
       name: 'price',
       type: 'number',
-      required: true,
+      admin: {
+        description: 'Wajib diisi kecuali unit = "Contact us / Custom".',
+        // Opsional: hanya tampil jika bukan contact
+        condition: (data) => data?.unit !== 'contact',
+      },
+      validate: (val: number | null | undefined, { data }: any) => {
+        if (data?.unit !== 'contact' && (val === undefined || val === null)) {
+          return 'Price is required for this unit.'
+        }
+        return true
+      },
     },
+
     {
-      // Menghubungkan paket ini ke lapangan golf induknya
+      name: 'currency',
+      type: 'text',
+      defaultValue: 'USD',
+      admin: { description: 'Contoh: USD, IDR, SGD.' },
+    },
+    { name: 'order', type: 'number', admin: { description: 'Urutan tampil (kecil = atas).' } },
+
+    // 🔥 Tambahan baru: catatan singkat di baris paket
+    {
+      name: 'notes',
+      type: 'text',
+      admin: { description: 'Catatan opsional, mis. “After 2 PM”, “Include cart”' },
+    },
+
+    {
       name: 'parentCourse',
       type: 'relationship',
       relationTo: 'golf-courses',
       required: true,
-      hasMany: false,
+      admin: { description: 'Paket ini milik course mana.' },
     },
   ],
-};
+}
 
-export default GolfPackages;
+export default GolfPackages
