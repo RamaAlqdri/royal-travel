@@ -94,7 +94,7 @@ export default buildConfig({
   //   // Jika argumen --seed ada, jalankan proses seeding
   // },
 
-  cors: [getServerSideURL(), process.env.CORS_URL ?? ""].filter((url): url is string => typeof url === "string" && url.length > 0),
+  cors: process.env.NEXT_PUBLIC_CORS_URL ? [process.env.NEXT_PUBLIC_CORS_URL] : [],
   // cors: ['http://localhost:550', 'http://localhost:5173', 'https://royaltravel.id'],
   // csrf: ['http://localhost:5501', 'http://localhost:5173', 'https://royaltravel.id'],
   globals: [Header, Footer],
