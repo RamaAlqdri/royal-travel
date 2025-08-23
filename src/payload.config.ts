@@ -94,7 +94,7 @@ export default buildConfig({
   //   // Jika argumen --seed ada, jalankan proses seeding
   // },
 
-  cors: [getServerSideURL(), 'http://127.0.0.1:5501', 'http://localhost:5500'].filter(Boolean),
+  cors: [getServerSideURL()].filter(Boolean),
   // cors: ['http://localhost:550', 'http://localhost:5173', 'https://royaltravel.id'],
   // csrf: ['http://localhost:5501', 'http://localhost:5173', 'https://royaltravel.id'],
   globals: [Header, Footer],
