@@ -42,7 +42,7 @@ Lalu edit isi `.env` seperti berikut:
 DATABASE_URI=postgres://royal_user:royal123@localhost:5432/royaltravel_db
 PAYLOAD_SECRET=supersecret123
 NEXT_PUBLIC_SERVER_URL=http://localhost:3000
-NEXT_PUBLIC_CORS_URL=http://localhost:3000
+NEXT_PUBLIC_CORS_URL=http://127.0.0.1:5501  your front end url
 ```
 
 > Gantilah `royal_user`, `royal123`, dan `royaltravel_db` sesuai database lokal PostgreSQL Anda.
