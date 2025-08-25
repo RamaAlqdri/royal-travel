@@ -41,9 +41,6 @@ Lalu edit isi `.env` seperti berikut:
 ```
 DATABASE_URI=postgres://royal_user:royal123@localhost:5432/royaltravel_db
 PAYLOAD_SECRET=supersecret123
-NODE_ENV=development
-PORT=3000
-
 NEXT_PUBLIC_SERVER_URL=http://localhost:3000
 NEXT_PUBLIC_CORS_URL=http://localhost:3000
 ```
